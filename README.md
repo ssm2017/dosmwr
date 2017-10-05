@@ -1,0 +1,1 @@
+Drupal module to create xml region files for OpenSimulator.

@@ -1,0 +1,99 @@
+<?php
+
+function dosmwr_menu() {
+  $items = array();
+  $items['grid/webregions/%node/xml'] = array(
+    'title' => 'Webregions',
+    'description' => "Shows a web region in xml format.",
+    'page callback' => 'dosmwr_display_xml',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+function dosmwr_node_view($node, $view_mode) {
+  if ($node->type == 'dosmwr_region' || $node->type == 'dosmwr_region_bunch') {
+    $node->content['webregion_url'] = array(
+      '#markup' => t('<a href="@url">Click here to get the xml view of this webregion settings</a>', array('@url' => url('/grid/webregions/'. $node->nid. '/xml'))),
+      '#weight' => 1000,
+    );
+  }
+}
+
+function dosmwr_display_xml($node) {
+  drupal_add_http_header('Content-Type', 'application/xml');
+  $output = '<Nini>';
+  if ($node->type == 'dosmwr_region') {
+    $output .= dosmwr_get_region($node);
+  }
+  else if ($node->type == 'dosmwr_region_bunch') {
+    foreach ($node->field_dosmwr_region['und'] as $region_id) {
+      $region = node_load($region_id['target_id']);
+      $output .= dosmwr_get_region($region);
+    }
+  }
+  $output .= '</Nini>';
+  print $output;
+  drupal_exit();
+}
+
+function dosmwr_get_region($node) {
+  $region = '<Section Name="'. $node->title .'">';
+  $region .= '<Key Name="RegionUUID" Value="'.$node->field_dosmwr_uuid['und'][0]['uuid_field'].'" />';
+  // network
+  $region .= '<Key Name="InternalAddress" Value="'.$node->field_dosmwr_internaladdress['und'][0]['value'].'" />';
+  $region .= '<Key Name="InternalPort" Value="'.$node->field_dosmwr_internalport['und'][0]['value'].'" />';
+  if (isset($node->field_dosmwr_allowalternateports['und'][0]['value'])) {
+    $value = $node->field_dosmwr_allowalternateports['und'][0]['value'] ? "True": "False";
+    $region .= '<Key Name="AllowAlternatePorts" Value="'.$value.'" />';
+  }
+  $region .= '<Key Name="ExternalHostName" Value="'.$node->field_dosmwr_externalhostname['und'][0]['safe_value'].'" />';
+  if (isset($node->field_dosmwr_resolveaddress['und'][0]['value'])) {
+    $value = $node->field_dosmwr_resolveaddress['und'][0]['value'] ? "True": "False";
+    $region .= '<Key Name="ResolveAddress" Value="'.$value.'" />';
+  }
+  // map
+  $region .= '<Key Name="Location" Value="'.$node->field_dosmwr_location['und'][0]['value'].'" />';
+  if (isset($node->field_dosmwr_defaultlanding['und'][0]['safe_value'])) {
+    $region .= '<Key Name="DefaultLanding" Value="'.$node->field_dosmwr_defaultlanding['und'][0]['safe_value'].'" />';
+  }
+  if (isset($node->field_dosmwr_regiontype['und'][0]['safe_value'])) {
+    $region .= '<Key Name="RegionType" Value="'.$node->field_dosmwr_regiontype['und'][0]['safe_value'].'" />';
+  }
+  $region .= '<Key Name="SizeX" Value="'.$node->field_dosmwr_sizex['und'][0]['value'].'" />';
+  $region .= '<Key Name="SizeY" Value="'.$node->field_dosmwr_sizey['und'][0]['value'].'" />';
+  if (isset($node->field_dosmwr_maptilestaticuuid['und'][0]['uuid_field'])) {
+    $region .= '<Key Name="MaptileStaticUUID" Value="'.$node->field_dosmwr_maptilestaticuuid['und'][0]['uuid_field'].'" />';
+  }
+  if (isset($node->field_dosmwr_maptilestaticfile['und'][0]['safe_value'])) {
+    $region .= '<Key Name="MaptileStaticFile" Value="'.$node->field_dosmwr_maptilestaticfile['und'][0]['safe_value'].'" />';
+  }
+  // prims
+  if (isset($node->field_dosmwr_maxprims['und'][0]['value'])) {
+    $region .= '<Key Name="MaxPrims" Value="'.$node->field_dosmwr_maxprims['und'][0]['value'].'" />';
+  }
+  if (isset($node->field_dosmwr_maxprimsperuser['und'][0]['value'])) {
+    $region .= '<Key Name="MaxPrimsPerUser" Value="'.$node->field_dosmwr_maxprimsperuser['und'][0]['value'].'" />';
+  }
+  if (isset($node->field_dosmwr_physicalprimmax['und'][0]['value'])) {
+    $region .= '<Key Name="PhysicalPrimMax" Value="'.$node->field_dosmwr_physicalprimmax['und'][0]['value'].'" />';
+  }
+  if (isset($node->field_dosmwr_nonphysicalprimmax['und'][0]['value'])) {
+    $region .= '<Key Name="NonPhysicalPrimMax" Value="'.$node->field_dosmwr_nonphysicalprimmax['und'][0]['value'].'" />';
+  }
+  if (isset($node->field_dosmwr_linksetprims['und'][0]['value'])) {
+    $region .= '<Key Name="LinksetPrims" Value="'.$node->field_dosmwr_linksetprims['und'][0]['value'].'" />';
+  }
+  if (isset($node->field_dosmwr_clampprimsize['und'][0]['value'])) {
+    $value = $node->field_dosmwr_clampprimsize['und'][0]['value'] ? "True": "False";
+    $region .= '<Key Name="ClampPrimSize" Value="'.$value.'" />';
+  }
+  // users
+  if (isset($node->field_dosmwr_maxagents['und'][0]['value'])) {
+    $region .= '<Key Name="MaxAgents" Value="'.$node->field_dosmwr_maxagents['und'][0]['value'].'" />';
+  }
+  $region .= '</Section>';
+  return $region;
+}

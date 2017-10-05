@@ -1,0 +1,735 @@
+
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the node_dosmwr module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function dosmwr_install() {
+  $node_types = _dosmwr_get_node_types();
+
+  foreach ($node_types as $machine_name => $texts) {
+    // define the node type
+    $defaults = array(
+      'type' => $machine_name,
+      'name' => $texts['name'],
+      'base' => 'node_content',
+      'title_label' => $texts['title_label'],
+      'description' => $texts['description'],
+      'custom' => TRUE,
+    );
+
+    // set other node defaults not declared above
+    $content_type = node_type_set_defaults($defaults);
+
+    // add the body field
+    node_add_body_field($content_type, $texts['body_label']);
+
+    // save the content type
+    node_type_save($content_type);
+
+    // add peristant variables that control settings
+    variable_set('additional_settings__active_tab_' . $machine_name, 'edit-menu');
+    variable_set('node_preview_' . $machine_name, 1);
+    variable_set('node_options_' . $machine_name, array(0 => 'status'));
+    variable_set('node_submitted_' . $machine_name, 0);
+    variable_set('menu_options_' . $machine_name, array());
+    variable_set('menu_parent_' . $machine_name, 'main-menu:0');
+    variable_set('comment_' . $machine_name, 'COMMENT_NODE_HIDDEN');
+
+    // create all the fields we are adding to our content type
+    foreach (_dosmwr_installed_fields($machine_name) as $field) {
+      field_create_field($field);
+    }
+
+    // create all the instances for our fields
+    foreach (_dosmwr_installed_instances($machine_name) as $instance) {
+      $instance['entity_type'] = 'node';
+      $instance['bundle'] = $defaults['type'];
+      field_create_instance($instance);
+    }
+  }
+}
+
+/**
+ * Define the node types values
+ */
+function _dosmwr_get_node_types() {
+  $t = get_t();
+  return array(
+    'dosmwr_region' => array(
+      'name' => $t('Web Region'),
+      'title_label' => $t('Name'),
+      'body_label' => $t('Description'),
+      'description' => $t('Single region node.')
+    ),
+    'dosmwr_region_bunch' => array(
+      'name' => $t('Web Region bunch'),
+      'title_label' => $t('Name'),
+      'body_label' => $t('Description'),
+      'description' => $t('Multiple regions node.')
+    ),
+  );
+}
+
+/**
+ * Define the fields for our content type.
+ */
+function _dosmwr_installed_fields($node_type) {
+  $t = get_t();
+  switch ($node_type) {
+    case 'dosmwr_region':
+      return array(
+        // Uuid
+        'dosmwr_uuid' => array(
+          'field_name' => 'field_dosmwr_uuid',
+          'type' => 'uuid_field',
+          'module' => 'uuid_field',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Internal address
+        'dosmwr_internaladdress' => array(
+          'field_name' => 'field_dosmwr_internaladdress',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 15
+          )
+        ),
+        // Internal port
+        'dosmwr_internalport' => array(
+          'field_name' => 'field_dosmwr_internalport',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Allow alternate ports
+        'dosmwr_allowalternateports' => array(
+          'field_name' => 'field_dosmwr_allowalternateports',
+          'type' => 'list_boolean',
+          'module' => 'list',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => -1,
+          'deleted' => 0,
+          'settings' => array(
+            'allowed_values' => array(
+              0 => 'False',
+              1 => 'True'
+            )
+          ),
+        ),
+        // External host name
+        'dosmwr_externalhostname' => array(
+          'field_name' => 'field_dosmwr_externalhostname',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 255
+          )
+        ),
+        // Resolve address
+        'dosmwr_resolveaddress' => array(
+          'field_name' => 'field_dosmwr_resolveaddress',
+          'type' => 'list_boolean',
+          'module' => 'list',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => -1,
+          'deleted' => 0,
+          'settings' => array(
+            'allowed_values' => array(
+              0 => 'False',
+              1 => 'True'
+            )
+          ),
+        ),
+        // Location
+        'dosmwr_location' => array(
+          'field_name' => 'field_dosmwr_location',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 11
+          )
+        ),
+        // Default landing
+        'dosmwr_defaultlanding' => array(
+          'field_name' => 'field_dosmwr_defaultlanding',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 13
+          )
+        ),
+        // Type
+        'dosmwr_regiontype' => array(
+          'field_name' => 'field_dosmwr_regiontype',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 255
+          )
+        ),
+        // Size x
+        'dosmwr_sizex' => array(
+          'field_name' => 'field_dosmwr_sizex',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Size y
+        'dosmwr_sizey' => array(
+          'field_name' => 'field_dosmwr_sizey',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Maptile static uuid
+        'dosmwr_maptilestaticuuid' => array(
+          'field_name' => 'field_dosmwr_maptilestaticuuid',
+          'type' => 'uuid_field',
+          'module' => 'uuid_field',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Maptile static file
+        'dosmwr_maptilestaticfile' => array(
+          'field_name' => 'field_dosmwr_maptilestaticfile',
+          'type' => 'text',
+          'module' => 'text',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+          'settings' => array(
+            'max_length' => 255
+          )
+        ),
+        // Max prims
+        'dosmwr_maxprims' => array(
+          'field_name' => 'field_dosmwr_maxprims',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Max prims per user
+        'dosmwr_maxprimsperuser' => array(
+          'field_name' => 'field_dosmwr_maxprimsperuser',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Physical prim max
+        'dosmwr_physicalprimmax' => array(
+          'field_name' => 'field_dosmwr_physicalprimmax',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Non physical prim max
+        'dosmwr_nonphysicalprimmax' => array(
+          'field_name' => 'field_dosmwr_nonphysicalprimmax',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Linkset prims
+        'dosmwr_linksetprims' => array(
+          'field_name' => 'field_dosmwr_linksetprims',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        // Clamp prim size
+        'dosmwr_clampprimsize' => array(
+          'field_name' => 'field_dosmwr_clampprimsize',
+          'type' => 'list_boolean',
+          'module' => 'list',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => -1,
+          'deleted' => 0,
+          'settings' => array(
+            'allowed_values' => array(
+              0 => 'False',
+              1 => 'True'
+            )
+          ),
+        ),
+        // Max agents
+        'dosmwr_maxagents' => array(
+          'field_name' => 'field_dosmwr_maxagents',
+          'type' => 'number_integer',
+          'module' => 'number',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => 1,
+          'deleted' => 0,
+        ),
+        
+      );
+      break;
+    case 'dosmwr_region_bunch':
+      return array(
+        // Regions
+        'dosmwr_region' => array(
+          'field_name' => 'field_dosmwr_region',
+          'type' => 'entityreference',
+          'module' => 'entityreference',
+          'active' => 1,
+          'locked' => 1,
+          'cardinality' => -1,
+          'deleted' => 0,
+          'settings' => array(
+            'target_type' => 'node',
+            'handler' => 'base',
+            'handler_settings' => array(
+              'target_bundles' => array(
+                'dosmwr_region' => 'dosmwr_region'
+              ),
+              'sort' => array(
+                'type' => 'property',
+                'property' => 'title',
+                'direction' => 'ASC'
+              )
+            )
+          ),
+        ),
+      );
+      break;
+  }
+}
+
+/**
+ * Define the field instances for our content type.
+ */
+function _dosmwr_installed_instances($node_type) {
+  $t = get_t();
+  switch ($node_type) {
+    case 'dosmwr_region':
+      return array(
+        // Uuid
+        'dosmwr_uuid' => array(
+          'field_name' => 'field_dosmwr_uuid',
+          'label' => $t('Region uuid'),
+          'required' => TRUE,
+          'description' => $t('The unique ID of the region.')
+        ),
+        // Internal address
+        'dosmwr_internaladdress' => array(
+          'field_name' => 'field_dosmwr_internaladdress',
+          'label' => t('Internal address'),
+          'required' => TRUE,
+          'description' => $t("0.0.0.0 if you have more than one NIC on the server and you don't care which IP address OpenSimulator listens on (this is the usual setting). Alternatively, you can set to a specific IP."),
+          'default_value' => array(
+            0 => array(
+              'value' => '0.0.0.0'
+            )
+          ),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 15,
+              'max_length' => 15
+            )
+          ),
+        ),
+        // Internal port
+        'dosmwr_internalport' => array(
+          'field_name' => 'field_dosmwr_internalport',
+          'label' => t('Internal port'),
+          'required' => TRUE,
+          'description' => $t('IP port for all incoming client connections.'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'min' => 1,
+            'max' => 65535
+          ),
+          'default_value' => array(
+            0 => array(
+              'value' => 9000
+            )
+          )
+        ),
+        // Allow alternate ports
+        'dosmwr_allowalternateports' => array(
+          'field_name' => 'field_dosmwr_allowalternateports',
+          'label' => t('Allow alternate ports'),
+          'required' => False,
+          'description' => $t('Not Used. Leave it always False..'),
+          'widget' => array(
+            'type' => 'options_onoff',
+            'module' => 'options',
+            'settings' => array(
+              'display_label' => 1
+            )
+          )
+        ),
+        // External host name
+        'dosmwr_externalhostname' => array(
+          'field_name' => 'field_dosmwr_externalhostname',
+          'label' => t('External host name'),
+          'required' => TRUE,
+          'description' => $t("External IP Address of the router or FQDN."),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 60,
+              'max_length' => 255
+            )
+          ),
+        ),
+        // Resolve address
+        'dosmwr_resolveaddress' => array(
+          'field_name' => 'field_dosmwr_resolveaddress',
+          'label' => t('Resolve address'),
+          'required' => False,
+          'description' => $t('Resolve hostname to IP on start (for running inside Docker)'),
+          'widget' => array(
+            'type' => 'options_onoff',
+            'module' => 'options',
+            'settings' => array(
+              'display_label' => 1
+            )
+          )
+        ),
+        // Location
+        'dosmwr_location' => array(
+          'field_name' => 'field_dosmwr_location',
+          'label' => t('Location'),
+          'required' => TRUE,
+          'description' => $t('The (x, y) location of the region on the grid..'),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 11,
+              'max_length' => 11
+            )
+          ),
+        ),
+        // Default landing
+        'dosmwr_defaultlanding' => array(
+          'field_name' => 'field_dosmwr_defaultlanding',
+          'label' => t('Default landing'),
+          'required' => FALSE,
+          'description' => $t('Default region landing point used when no teleport coords are specified. Use format <xxx,yyy,zzz>'),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 11,
+              'max_length' => 11
+            )
+          ),
+        ),
+        // Type
+        'dosmwr_regiontype' => array(
+          'field_name' => 'field_dosmwr_regiontype',
+          'label' => t('Region type'),
+          'required' => FALSE,
+          'description' => $t("The region type as shown in the Covenant tab of the Region/Estate dialog in a standard Second Life viewer. Can be used to specify Mainland, Estate, etc. based on type of grid."),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 60,
+              'max_length' => 255
+            )
+          )
+        ),
+        // Size x
+        'dosmwr_sizex' => array(
+          'field_name' => 'field_dosmwr_sizex',
+          'label' => t('Size X'),
+          'required' => TRUE,
+          'description' => $t('X size of the region (multiple of 256).'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'min' => 256
+          ),
+          'default_value' => array(
+            0 => array(
+              'value' => 256
+            )
+          )
+        ),
+        // Size y
+        'dosmwr_sizey' => array(
+          'field_name' => 'field_dosmwr_sizey',
+          'label' => t('Size Y'),
+          'required' => TRUE,
+          'description' => $t('Y size of the region (multiple of 256).'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'min' => 256
+          ),
+          'default_value' => array(
+            0 => array(
+              'value' => 256
+            )
+          )
+        ),
+        // Maptile static uuid
+        'dosmwr_maptilestaticuuid' => array(
+          'field_name' => 'field_dosmwr_maptilestaticuuid',
+          'label' => $t('Maptile static uuid'),
+          'required' => FALSE,
+          'description' => $t('UUID of texture to use as a maptile for this region. Only set if you have disabled dynamic generation of the map tile from the region contents.')
+        ),
+        // Maptile static file
+        'dosmwr_maptilestaticfile' => array(
+          'field_name' => 'field_dosmwr_maptilestaticfile',
+          'label' => t('Maptile static file'),
+          'required' => FALSE,
+          'description' => $t("Region Specific Static Maptiles from file."),
+          'widget' => array(
+            'type' => 'text_textfield',
+            'module' => 'text',
+            'settings' => array(
+              'size' => 60,
+              'max_length' => 255
+            )
+          ),
+        ),
+        // Max prims
+        'dosmwr_maxprims' => array(
+          'field_name' => 'field_dosmwr_maxprims',
+          'label' => t('Max prims'),
+          'required' => FALSE,
+          'description' => $t('The maximum number of prims that the region will be listed as supporting. However, this limit is not currently enforced by OpenSimulator. Due to LL protocol constraints, the maximum limit that can be shown is 45000.'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'max' => 45000
+          )
+        ),
+        // Max prims per user
+        'dosmwr_maxprimsperuser' => array(
+          'field_name' => 'field_dosmwr_maxprimsperuser',
+          'label' => t('Max prims per user'),
+          'required' => FALSE,
+          'description' => $t('Max prims per user (per parcel). Negative values (-1) will disable the check.'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'max' => 45000
+          )
+        ),
+        // Physical prim max
+        'dosmwr_physicalprimmax' => array(
+          'field_name' => 'field_dosmwr_physicalprimmax',
+          'label' => t('Physical prim max'),
+          'required' => FALSE,
+          'description' => $t('The maximum dimensions of a physical prim. This is a single number which applies to X, Y and Z co-ordinates. This will affect resizing of existing prims. Default is 10. This setting can also be used in the [Startup] section of OpenSim.ini. If the region setting exists then it will override the OpenSim.ini setting.'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'max' => 45000
+          ),
+        ),
+        // Non physical prim max
+        'dosmwr_nonphysicalprimmax' => array(
+          'field_name' => 'field_dosmwr_nonphysicalprimmax',
+          'label' => t('Non physical prim max'),
+          'required' => FALSE,
+          'description' => $t('The maximum dimensions for a non-physical prim. This is a single number which applies to X, Y and Z co-ordinates. This will affect resizing of existing prims. Default is 256. This setting can also be used in the [Startup] section of OpenSim.ini. If the region setting exists then it will override the OpenSim.ini setting. '),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'max' => 45000
+          ),
+        ),
+        // Linkset prims
+        'dosmwr_linksetprims' => array(
+          'field_name' => 'field_dosmwr_linksetprims',
+          'label' => t('Linkset prims'),
+          'required' => FALSE,
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          ),
+          'settings' => array(
+            'max' => 45000
+          ),
+        ),
+        // Clamp prim size
+        'dosmwr_clampprimsize' => array(
+          'field_name' => 'field_dosmwr_clampprimsize',
+          'label' => t('Clamp prim size'),
+          'required' => FALSE,
+          'description' => $t('If true then if a viewer attempts to create a prim which has any dimension larger than the NonphysicalPrimMax, then that dimension is reduced to NonphysicalPrimMax. Default is false; This setting can also be used in the [Startup] section of OpenSim.ini. If the region setting exists then it will override the OpenSim.ini setting.'),
+          'widget' => array(
+            'type' => 'options_onoff',
+            'module' => 'options',
+            'settings' => array(
+              'display_label' => 1
+            )
+          )
+        ),
+        // Max agents
+        'dosmwr_maxagents' => array(
+          'field_name' => 'field_dosmwr_maxagents',
+          'label' => t('Max agents'),
+          'required' => FALSE,
+          'description' => $t('The maximum number of agents that can be in the in the region at any given time. The default is 100.'),
+          'widget' => array(
+            'type' => 'number',
+            'module' => 'number',
+          )
+        ),
+      );
+      break;
+    case 'dosmwr_region_bunch':
+      return array(
+        // Regions
+        'dosmwr_region' => array(
+          'field_name' => 'field_dosmwr_region',
+          'label' => t('Regions'),
+          'required' => TRUE,
+          'widget' => array(
+            'type' => 'entityreference_autocomplete',
+            'module' => 'entityreference',
+            'settings' => array(
+              'match_operator' => 'CONTAINS',
+              'size' => 60,
+              'path' => ''
+            )
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline',
+              'type' => 'entityreference_label',
+              'module' => 'entityreference',
+              'settings' => array(
+                'link' => TRUE
+              )
+            )
+          )
+        ),
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function dosmwr_uninstall() {
+  $node_types = _dosmwr_get_node_types();
+
+  foreach ($node_types as $machine_name => $texts) {
+    // gather all nodes created
+    $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+    $result = db_query($sql, array(':type' => $machine_name));
+    $nids = array();
+    foreach ($result as $row) {
+      $nids[] = $row->nid;
+    }
+
+    // delete all the nodes at once
+    node_delete_multiple($nids);
+
+    // remove peristant variables that control settings
+    variable_del('additional_settings__active_tab_' . $machine_name);
+    variable_del('node_preview_' . $machine_name);
+    variable_del('node_options_' . $machine_name);
+    variable_del('node_submitted_' . $machine_name);
+    variable_del('menu_options_' . $machine_name);
+    variable_del('menu_parent_' . $machine_name);
+
+
+    // find all fields and delete them
+    foreach (array_keys(_dosmwr_installed_fields($machine_name)) as $field) {
+      field_delete_field($field);
+    }
+
+    // find all fields and delete instance
+    $instances = field_info_instances('node', $machine_name);
+    foreach ($instances as $instance_name => $instance) {
+      field_delete_instance($instance);
+    }
+
+    // delete our content type
+    node_type_delete($machine_name);
+  }
+
+  // purge all field information
+  field_purge_batch(1000);
+
+  // Remove variables.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'dosmwr%%'");
+}

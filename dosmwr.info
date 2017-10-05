@@ -1,0 +1,9 @@
+name = OpenSimulator Manager Web Regions
+description = Module to generate regions config
+package = OpenSimulator Manager
+dependencies[] = uuid_field
+dependencies[] = entityreference
+dependencies[] = list
+dependencies[] = number
+dependencies[] = options
+core = 7.x
