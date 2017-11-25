@@ -29,9 +29,11 @@ function dosmwr_display_xml($node) {
     $output .= dosmwr_get_region($node);
   }
   else if ($node->type == 'dosmwr_region_bunch') {
+    $i=0;
     foreach ($node->field_dosmwr_region['und'] as $region_id) {
       $region = node_load($region_id['target_id']);
-      $output .= dosmwr_get_region($region);
+      $output .= dosmwr_get_region($region, $i);
+      $i++;
     }
   }
   $output .= '</Nini>';
@@ -39,17 +41,25 @@ function dosmwr_display_xml($node) {
   drupal_exit();
 }
 
-function dosmwr_get_region($node) {
+function dosmwr_get_region($node, $index = 0) {
   $region = '<Section Name="'. $node->title .'">';
   $region .= '<Key Name="RegionUUID" Value="'.$node->field_dosmwr_uuid['und'][0]['uuid_field'].'" />';
   // network
   $region .= '<Key Name="InternalAddress" Value="'.$node->field_dosmwr_internaladdress['und'][0]['value'].'" />';
-  $region .= '<Key Name="InternalPort" Value="'.$node->field_dosmwr_internalport['und'][0]['value'].'" />';
+  $internal_port = $node->field_dosmwr_internalport['und'][0]['value'];
+  if (isset($_GET['InternalPort'])) {
+    $internal_port = (int)$_GET['InternalPort'] + $index;
+  }
+  $region .= '<Key Name="InternalPort" Value="'.$internal_port.'" />';
   if (isset($node->field_dosmwr_allowalternateports['und'][0]['value'])) {
     $value = $node->field_dosmwr_allowalternateports['und'][0]['value'] ? "True": "False";
     $region .= '<Key Name="AllowAlternatePorts" Value="'.$value.'" />';
   }
-  $region .= '<Key Name="ExternalHostName" Value="'.$node->field_dosmwr_externalhostname['und'][0]['safe_value'].'" />';
+  $external_host_name = $node->field_dosmwr_externalhostname['und'][0]['safe_value'];
+  if (isset($_GET['ExternalHostName'])) {
+    $external_host_name = base64_decode($_GET['ExternalHostName']);
+  }
+  $region .= '<Key Name="ExternalHostName" Value="'.$external_host_name.'" />';
   if (isset($node->field_dosmwr_resolveaddress['und'][0]['value'])) {
     $value = $node->field_dosmwr_resolveaddress['und'][0]['value'] ? "True": "False";
     $region .= '<Key Name="ResolveAddress" Value="'.$value.'" />';
