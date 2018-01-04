@@ -2,37 +2,102 @@
 
 function dosmwr_menu() {
   $items = array();
-  $items['grid/webregions/%node/xml'] = array(
+  $items['grid/webregions/%node/%'] = array(
     'title' => 'Webregions',
     'description' => "Shows a web region in xml format.",
-    'page callback' => 'dosmwr_display_xml',
-    'page arguments' => array(2),
+    'page callback' => 'dosmwr_display',
+    'page arguments' => array(2, 3),
     'access callback' => TRUE,
     'type' => MENU_LOCAL_TASK,
   );
   return $items;
 }
 
-function dosmwr_node_view($node, $view_mode) {
+function dosmwr_display($node, $type) {
+  switch ($type) {
+    case 'xml':
+      dosmwr_display_xml($node);
+      break;
+    case 'ini':
+      dosmwr_display_ini($node);
+      break;
+    default:
+      return;
+  }
+}
+
+function dosmwr_node_view($node, $view_mode, $langcode) {
   if ($node->type == 'dosmwr_region' || $node->type == 'dosmwr_region_bunch') {
-    $node->content['webregion_url'] = array(
-      '#markup' => t('<a href="@url">Click here to get the xml view of this webregion settings</a>', array('@url' => url('/grid/webregions/'. $node->nid. '/xml'))),
-      '#weight' => 1000,
+    $node->content['dosmwr_xml_link'] = array(
+      '#theme' => 'link',
+      '#path' => url('/grid/webregions/'. $node->nid. '/xml'),
+      '#text' => t('XML version'),
+      '#options' => array(
+        'attributes' => array(),
+        'html' => FALSE
+      ),
+      '#prefix' => '<div>',
+      '#suffix' => '</div>'
+    );
+    $node->content['dosmwr_ini_link'] = array(
+      '#theme' => 'link',
+      '#path' => url('/grid/webregions/'. $node->nid. '/ini'),
+      '#text' => t('INI version'),
+      '#options' => array(
+        'attributes' => array(),
+        'html' => FALSE
+      ),
+      '#prefix' => '<div>',
+      '#suffix' => '</div>'
     );
   }
+}
+
+function dosmwr_field_extra_fields() {
+  $settings = array(
+    'dosmwr_xml_link' => array(
+      'label' => t('Link to display xml output'),
+      'weight' => 98,
+    ),
+    'dosmwr_ini_link' => array(
+      'label' => t('Link to display ini output'),
+      'weight' => 99,
+    ),
+  );
+  $extra['node']['dosmwr_region']['display'] = $settings;
+  $extra['node']['dosmwr_region_bunch']['display'] = $settings;
+  return $extra;
+}
+
+function dosmwr_display_ini($node) {
+  drupal_add_http_header('Content-Type', 'application/ini');
+  $output = '';
+  if ($node->type == 'dosmwr_region') {
+    $output .= dosmwr_get_region_ini($node);
+  }
+  else if ($node->type == 'dosmwr_region_bunch') {
+    $i=0;
+    foreach ($node->field_dosmwr_region['und'] as $region_id) {
+      $region = node_load($region_id['target_id']);
+      $output .= dosmwr_get_region_ini($region, $i);
+      $i++;
+    }
+  }
+  print $output;
+  drupal_exit();
 }
 
 function dosmwr_display_xml($node) {
   drupal_add_http_header('Content-Type', 'application/xml');
   $output = '<Nini>';
   if ($node->type == 'dosmwr_region') {
-    $output .= dosmwr_get_region($node);
+    $output .= dosmwr_get_region_xml($node);
   }
   else if ($node->type == 'dosmwr_region_bunch') {
     $i=0;
     foreach ($node->field_dosmwr_region['und'] as $region_id) {
       $region = node_load($region_id['target_id']);
-      $output .= dosmwr_get_region($region, $i);
+      $output .= dosmwr_get_region_xml($region, $i);
       $i++;
     }
   }
@@ -41,7 +106,7 @@ function dosmwr_display_xml($node) {
   drupal_exit();
 }
 
-function dosmwr_get_region($node, $index = 0) {
+function dosmwr_get_region_xml($node, $index = 0) {
   $region = '<Section Name="'. $node->title .'">';
   $region .= '<Key Name="RegionUUID" Value="'.$node->field_dosmwr_uuid['und'][0]['uuid_field'].'" />';
   // network
@@ -105,5 +170,71 @@ function dosmwr_get_region($node, $index = 0) {
     $region .= '<Key Name="MaxAgents" Value="'.$node->field_dosmwr_maxagents['und'][0]['value'].'" />';
   }
   $region .= '</Section>';
+  return $region;
+}
+
+function dosmwr_get_region_ini($node, $index = 0) {
+  $region = '['. $node->title .']'. "\n";
+  $region .= 'RegionUUID = '.$node->field_dosmwr_uuid['und'][0]['uuid_field']. "\n";
+  // network
+  $region .= 'InternalAddress = '.$node->field_dosmwr_internaladdress['und'][0]['value']. "\n";
+  $internal_port = $node->field_dosmwr_internalport['und'][0]['value'];
+  if (isset($_GET['InternalPort'])) {
+    $internal_port = (int)$_GET['InternalPort'] + $index;
+  }
+  $region .= 'InternalPort = '.$internal_port;
+  if (isset($node->field_dosmwr_allowalternateports['und'][0]['value'])) {
+    $value = $node->field_dosmwr_allowalternateports['und'][0]['value'] ? "True": "False";
+    $region .= 'AllowAlternatePorts = '.$value;
+  }
+  $external_host_name = $node->field_dosmwr_externalhostname['und'][0]['safe_value'];
+  if (isset($_GET['ExternalHostName'])) {
+    $external_host_name = base64_decode($_GET['ExternalHostName']);
+  }
+  $region .= 'ExternalHostName = '.$external_host_name. "\n";
+  if (isset($node->field_dosmwr_resolveaddress['und'][0]['value'])) {
+    $value = $node->field_dosmwr_resolveaddress['und'][0]['value'] ? "True": "False";
+    $region .= 'ResolveAddress = '.$value. "\n";
+  }
+  // map
+  $region .= 'Location = '.$node->field_dosmwr_location['und'][0]['value']. "\n";
+  if (isset($node->field_dosmwr_defaultlanding['und'][0]['safe_value'])) {
+    $region .= 'DefaultLanding = '.$node->field_dosmwr_defaultlanding['und'][0]['safe_value']. "\n";
+  }
+  if (isset($node->field_dosmwr_regiontype['und'][0]['safe_value'])) {
+    $region .= 'RegionType = '.$node->field_dosmwr_regiontype['und'][0]['safe_value']. "\n";
+  }
+  $region .= 'SizeX = '.$node->field_dosmwr_sizex['und'][0]['value']. "\n";
+  $region .= 'SizeY = '.$node->field_dosmwr_sizey['und'][0]['value']. "\n";
+  if (isset($node->field_dosmwr_maptilestaticuuid['und'][0]['uuid_field'])) {
+    $region .= 'MaptileStaticUUID = '.$node->field_dosmwr_maptilestaticuuid['und'][0]['uuid_field']. "\n";
+  }
+  if (isset($node->field_dosmwr_maptilestaticfile['und'][0]['safe_value'])) {
+    $region .= 'MaptileStaticFile = '.$node->field_dosmwr_maptilestaticfile['und'][0]['safe_value']. "\n";
+  }
+  // prims
+  if (isset($node->field_dosmwr_maxprims['und'][0]['value'])) {
+    $region .= 'MaxPrims = '.$node->field_dosmwr_maxprims['und'][0]['value']. "\n";
+  }
+  if (isset($node->field_dosmwr_maxprimsperuser['und'][0]['value'])) {
+    $region .= 'MaxPrimsPerUser = '.$node->field_dosmwr_maxprimsperuser['und'][0]['value']. "\n";
+  }
+  if (isset($node->field_dosmwr_physicalprimmax['und'][0]['value'])) {
+    $region .= 'PhysicalPrimMax = '.$node->field_dosmwr_physicalprimmax['und'][0]['value']. "\n";
+  }
+  if (isset($node->field_dosmwr_nonphysicalprimmax['und'][0]['value'])) {
+    $region .= 'NonPhysicalPrimMax = '.$node->field_dosmwr_nonphysicalprimmax['und'][0]['value']. "\n";
+  }
+  if (isset($node->field_dosmwr_linksetprims['und'][0]['value'])) {
+    $region .= 'LinksetPrims = '.$node->field_dosmwr_linksetprims['und'][0]['value']. "\n";
+  }
+  if (isset($node->field_dosmwr_clampprimsize['und'][0]['value'])) {
+    $value = $node->field_dosmwr_clampprimsize['und'][0]['value'] ? "True": "False";
+    $region .= 'ClampPrimSize = '.$value. "\n";
+  }
+  // users
+  if (isset($node->field_dosmwr_maxagents['und'][0]['value'])) {
+    $region .= 'MaxAgents = '.$node->field_dosmwr_maxagents['und'][0]['value']. "\n";
+  }
   return $region;
 }
