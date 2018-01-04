@@ -182,10 +182,10 @@ function dosmwr_get_region_ini($node, $index = 0) {
   if (isset($_GET['InternalPort'])) {
     $internal_port = (int)$_GET['InternalPort'] + $index;
   }
-  $region .= 'InternalPort = '.$internal_port;
+  $region .= 'InternalPort = '.$internal_port. "\n";
   if (isset($node->field_dosmwr_allowalternateports['und'][0]['value'])) {
     $value = $node->field_dosmwr_allowalternateports['und'][0]['value'] ? "True": "False";
-    $region .= 'AllowAlternatePorts = '.$value;
+    $region .= 'AllowAlternatePorts = '.$value. "\n";
   }
   $external_host_name = $node->field_dosmwr_externalhostname['und'][0]['safe_value'];
   if (isset($_GET['ExternalHostName'])) {
