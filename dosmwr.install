@@ -367,7 +367,12 @@ function _dosmwr_installed_instances($node_type) {
           'field_name' => 'field_dosmwr_uuid',
           'label' => $t('Region uuid'),
           'required' => TRUE,
-          'description' => $t('The unique ID of the region.')
+          'description' => $t('The unique ID of the region.'),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Internal address
         'dosmwr_internaladdress' => array(
@@ -388,6 +393,11 @@ function _dosmwr_installed_instances($node_type) {
               'max_length' => 15
             )
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Internal port
         'dosmwr_internalport' => array(
@@ -398,6 +408,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           ),
           'settings' => array(
             'min' => 1,
@@ -421,6 +436,11 @@ function _dosmwr_installed_instances($node_type) {
             'settings' => array(
               'display_label' => 1
             )
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           )
         ),
         // External host name
@@ -437,6 +457,11 @@ function _dosmwr_installed_instances($node_type) {
               'max_length' => 255
             )
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Resolve address
         'dosmwr_resolveaddress' => array(
@@ -449,6 +474,11 @@ function _dosmwr_installed_instances($node_type) {
             'module' => 'options',
             'settings' => array(
               'display_label' => 1
+            )
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
             )
           )
         ),
@@ -466,6 +496,11 @@ function _dosmwr_installed_instances($node_type) {
               'max_length' => 11
             )
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Default landing
         'dosmwr_defaultlanding' => array(
@@ -481,6 +516,11 @@ function _dosmwr_installed_instances($node_type) {
               'max_length' => 11
             )
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Type
         'dosmwr_regiontype' => array(
@@ -495,6 +535,11 @@ function _dosmwr_installed_instances($node_type) {
               'size' => 60,
               'max_length' => 255
             )
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           )
         ),
         // Size x
@@ -506,6 +551,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           ),
           'settings' => array(
             'min' => 256
@@ -526,6 +576,11 @@ function _dosmwr_installed_instances($node_type) {
             'type' => 'number',
             'module' => 'number',
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          ),
           'settings' => array(
             'min' => 256
           ),
@@ -540,7 +595,12 @@ function _dosmwr_installed_instances($node_type) {
           'field_name' => 'field_dosmwr_maptilestaticuuid',
           'label' => $t('Maptile static uuid'),
           'required' => FALSE,
-          'description' => $t('UUID of texture to use as a maptile for this region. Only set if you have disabled dynamic generation of the map tile from the region contents.')
+          'description' => $t('UUID of texture to use as a maptile for this region. Only set if you have disabled dynamic generation of the map tile from the region contents.'),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Maptile static file
         'dosmwr_maptilestaticfile' => array(
@@ -556,6 +616,11 @@ function _dosmwr_installed_instances($node_type) {
               'max_length' => 255
             )
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          )
         ),
         // Max prims
         'dosmwr_maxprims' => array(
@@ -566,6 +631,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           ),
           'settings' => array(
             'max' => 45000
@@ -581,6 +651,11 @@ function _dosmwr_installed_instances($node_type) {
             'type' => 'number',
             'module' => 'number',
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          ),
           'settings' => array(
             'max' => 45000
           )
@@ -594,6 +669,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           ),
           'settings' => array(
             'max' => 45000
@@ -609,6 +689,11 @@ function _dosmwr_installed_instances($node_type) {
             'type' => 'number',
             'module' => 'number',
           ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
+          ),
           'settings' => array(
             'max' => 45000
           ),
@@ -621,6 +706,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           ),
           'settings' => array(
             'max' => 45000
@@ -638,6 +728,11 @@ function _dosmwr_installed_instances($node_type) {
             'settings' => array(
               'display_label' => 1
             )
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           )
         ),
         // Max agents
@@ -649,6 +744,11 @@ function _dosmwr_installed_instances($node_type) {
           'widget' => array(
             'type' => 'number',
             'module' => 'number',
+          ),
+          'display' => array(
+            'default' => array(
+              'label' => 'inline'
+            )
           )
         ),
       );
